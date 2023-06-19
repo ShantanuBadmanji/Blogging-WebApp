@@ -1,0 +1,27 @@
+<%- include('partials/header'); -%>
+
+
+
+    <h1>Home</h1>
+    <p class="mb-5">
+        <%= content %>
+    </p>
+
+    <div class="container ">
+        <% blogs.forEach( blog=> { %>
+            <div>
+                <h3>
+                    <%= blog.blogTitle %>
+                </h3>
+                <span class="d-flex gap-5 mb-3">
+                    <p style="max-width: 100ch; text-overflow:ellipsis; white-space:nowrap; overflow: hidden;">
+                        <%= blog.blogContent %>
+                    </p>
+                    <a href="/blog/:<%= blog.blogTitle %>">Read All</a>
+                </span>
+            </div>
+            <% } )%>
+    </div>
+
+
+    <%- include('partials/footer'); -%>
