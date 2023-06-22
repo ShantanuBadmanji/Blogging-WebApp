@@ -4,6 +4,7 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const ejs = require("ejs");
 const _ = require('lodash');
+const mongoose = require('mongoose');
 
 const con = "Lacus vel facilisis volutpat est velit egestas dui id ornare. Semper auctor neque vitae tempus quam. Sit amet cursus sit amet dictum sit amet justo. Viverra tellus in hac habitasse. Imperdiet proin fermentum leo vel orci porta. Donec ultrices tincidunt arcu non sodales neque sodales ut. Mattis molestie a iaculis at erat pellentesque adipiscing. Magnis dis parturient montes nascetur ridiculus mus mauris vitae ultricies. Adipiscing elit ut aliquam purus sit amet luctus venenatis lectus. Ultrices vitae auctor eu augue ut lectus arcu bibendum at. Odio euismod lacinia at quis risus sed vulputate odio ut. Cursus mattis molestie a iaculis at erat pellentesque adipiscing.";
 const aboutContent = "Hac habitasse platea dictumst vestibulum rhoncus est pellentesque. Dictumst vestibulum rhoncus est pellentesque elit ullamcorper. Non diam phasellus vestibulum lorem sed. Platea dictumst quisque sagittis purus sit. Egestas sed sed risus pretium quam vulputate dignissim suspendisse. Mauris in aliquam sem fringilla. Semper risus in hendrerit gravida rutrum quisque non tellus orci. Amet massa vitae tortor condimentum lacinia quis vel eros. Enim ut tellus elementum sagittis vitae. Mauris ultrices eros in cursus turpis massa tincidunt dui.";
@@ -17,15 +18,39 @@ app.set('view engine', 'ejs');
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
+connectToDatabase();
+async function connectToDatabase() {
+  try {
+    await mongoose.connect("mongodb://127.0.0.1:27017/blogDB")
+    console.log("Succesfully connected to database")
+  } catch (error) {
+    console.log(`Error in connecting to database: ${error}`);
+  }
+}
+
+const blogsSchema = new mongoose.Schema({
+  title: {
+    type: String,
+    required: true
+  },
+  content: String
+})
+
+const Blog = mongoose.model('Blog', blogsSchema)
 
 
 //  GET ROUTES
 app.get("/", (req, res) => {
-  // console.log(blogs)
-  res.render("home", {
-    content: con,
-    blogs: blogs
-  });
+  Blog.find()
+    .then(blogs => {
+      // console.log(blogs)
+      res.render(
+        "home",
+        {
+          content: con,
+          blogs: blogs
+        });
+    }).catch(err => console.log(err))
 });
 
 app.get("/about", (req, res) => {
@@ -39,33 +64,47 @@ app.get("/contact", (req, res) => {
 app.get("/compose", (req, res) => {
   res.render("compose");
 });
-app.get("/blog/:blogNmae", (req, res) => {
-  // console.log(req.params);
-
-  blogs.forEach(blog => {
-    if (_.lowerCase(blog.blogTitle) === _.lowerCase(req.params.blogNmae)) {
-      console.log(`match found: ${blog.blogTitle}`);
-      res.render("post", {
-        title: blog.blogTitle,
-        content: blog.blogContent
-      });
-      return;
-    }
-  });
-
-  // res.redirect("/");
+app.get("/blog/:blogName", (req, res) => {
+  console.log(req.params);
+  Blog.find().where({ title: _.capitalize(_.lowerCase(req.params.blogName)) })
+    .then(blog => {
+      console.log(blog)
+      res.render('post', {
+        title: blog.at(0).title,
+        content: blog.at(0).content
+      })
+    }).catch(err => {
+      console.log(err)
+      res.send(`<h1> error in finding the required blog: ${err}`)
+    })
 });
 
 
 //  POST ROUTES
 app.post("/compose", (req, res) => {
-  const newBlog = {
-    blogTitle: req.body.blogTitle,
-    blogContent: req.body.blogContent
+
+  const blogTitle = req.body.blogTitle;
+  const blogContent = req.body.blogContent;
+  if (blogContent != "" || blogTitle != "") {
+    new Blog({
+      title: _.capitalize(_.lowerCase(blogTitle)),
+      content: blogContent
+    })
+      .save()
+      .catch(err => console.log(err))
   }
-  console.log(newBlog);
-  if (newBlog.blogContent != "")
-    blogs.push(newBlog);
+  res.redirect("/");
+});
+
+app.post("/delete", (req, res) => {
+  console.log(req.body)
+  const deleteButton = req.body.deleteButton;
+  Blog.deleteOne().where({ title: _.capitalize(_.lowerCase(req.body.deleteButton)) })
+    .then(ack => {
+      console.log(ack)
+    }).catch(err => {
+      console.log(err)
+    });
   res.redirect("/");
 });
 
