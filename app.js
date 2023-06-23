@@ -20,7 +20,9 @@ app.use(express.static("public"));
 connectToDatabase();
 async function connectToDatabase() {
   try {
-    await mongoose.connect("mongodb://127.0.0.1:27017/blogDB")
+    const password = encodeURIComponent("shantanutodolist");
+    await mongoose.connect(`mongodb+srv://shantanubadmanji1912:${password}@cluster0.amnk3hs.mongodb.net/blogDB`)
+    // await mongoose.connect("mongodb://127.0.0.1:27017/blogDB")
     console.log("Succesfully connected to database")
   } catch (error) {
     console.log(`Error in connecting to database: ${error}`);
